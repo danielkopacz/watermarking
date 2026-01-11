@@ -1,0 +1,56 @@
+[project]
+name = "watermarking"
+description = ""
+version = "0.0.1"
+authors = [
+    { name = "Daniel Kopacz" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "PyWavelets",
+    "matplotlib",
+    "scipy",
+    "scikit-image",
+    "reedsolo"
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+ignore = [
+    "E501",
+    "D",
+    "S105",
+    "TD002",
+    "TD003",
+    "COM812",
+    "ISC001",
+    "ERA001",
+    "G004",
+    "ANN"
+]
+select = [
+    "ALL"
+]
+unfixable = [
+    "B"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["PLC0414"]
+"**/{tests,docs,tools}/*" = ["E402"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
