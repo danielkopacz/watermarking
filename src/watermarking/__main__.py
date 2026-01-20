@@ -8,7 +8,7 @@ import cv2
 import watermarking.algorithms.non_blind as NB
 from watermarking.attack import Attack
 from watermarking.benchmark import Benchmark
-from watermarking.plot import plot_ber, plot_psnr
+from watermarking.plot import plot_ber, plot_psnr, plot_ssim, plot_ncc
 from watermarking.watermark import BlindWatermark, NonBlindWatermark, RGBImage, Watermark
 
 ALGORITHMS = {
@@ -86,9 +86,12 @@ orig_watermark = cast("RGBImage", orig_watermark)
 
 results_ber = {}
 results_psnr = {}
+results_ssim = {}
+results_ncc = {}
 
 for method_name, algorithm in selected_methods.items():
     results_ber[method_name] = {}
+    results_ncc[method_name] = {}
 
     watermarked, watermark_shape = algorithm.embed(orig_image, orig_watermark)
     _ = cv2.imwrite(f"{input_image_path.stem}_watermarked_{method_name}.png", watermarked)
@@ -97,6 +100,7 @@ for method_name, algorithm in selected_methods.items():
     _ = cv2.imwrite(f"{watermark_image_path.stem}_{method_name}_expected.png", watermark_expected)
 
     results_psnr[method_name] = Benchmark.psnr(orig_image, watermarked)
+    results_ssim[method_name] = Benchmark.ssim(orig_image, watermarked)
 
     for attack_name, attack in selected_attacks.items():
         attacked = attack(watermarked)
@@ -115,6 +119,11 @@ for method_name, algorithm in selected_methods.items():
         ber = Benchmark.ber(watermark_expected, extracted)
         results_ber[method_name][attack_name] = ber
 
+        ncc = Benchmark.ncc(watermark_expected, extracted)
+        results_ncc[method_name][attack_name] = ncc
+
 
 plot_psnr(results_psnr)
 plot_ber(results_ber)
+plot_ssim(results_ssim)
+plot_ncc(results_ncc)
