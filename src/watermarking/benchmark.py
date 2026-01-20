@@ -18,17 +18,17 @@ class Benchmark:
         return 20 * np.log10(max_val / np.sqrt(mse))
 
     @staticmethod
-    def ber(original, watermarked):
-        return np.mean(original != watermarked)
+    def ber(watermark_expected, extracted_watermark):
+        return np.mean(watermark_expected != extracted_watermark)
 
     @staticmethod
     def ssim(original: RGBImage, watermarked: RGBImage):
         return structural_similarity(original, watermarked, channel_axis=2, data_range=255)
 
     @staticmethod
-    def ncc(original, watermarked):
-        v1 = original.flatten().astype(np.float32)
-        v2 = watermarked.flatten().astype(np.float32)
+    def ncc(watermark_expected, extracted_watermark):
+        v1 = watermark_expected.flatten().astype(np.float32)
+        v2 = extracted_watermark.flatten().astype(np.float32)
 
         norm1 = np.linalg.norm(v1)
         norm2 = np.linalg.norm(v2)
