@@ -8,8 +8,9 @@ from typing import cast, override
 
 import cv2
 
+import watermarking.algorithms.blind as B
 import watermarking.algorithms.non_blind as NB
-from watermarking.watermark import RGBImage
+from watermarking.watermark import BlindWatermark, NonBlindWatermark, RGBImage, Watermark
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="[%(name)s] %(levelname)s: %(message)s", level=logging.DEBUG)
@@ -80,10 +81,8 @@ def frames_to_video(frames, video_info: VideoInfo, output_path: str) -> None:
     video_capture.release()
 
 
-def embed(input_file: str, output_file: str, algorithm):
+def embed(input_file: str, output_file: str, watermark, algorithm):
     frames, info = video_to_frames(input_file)
-    watermark = cv2.imread("watermark.png", cv2.IMREAD_GRAYSCALE)
-    watermark = cast("RGBImage", watermark)
 
     for i in range(len(frames)):
         frames[i], shape = algorithm.embed(frames[i], watermark)
@@ -96,9 +95,16 @@ def extract(original_video: str, watermarked_video: str, algorithm, shape: tuple
     orig_frames, _ = video_to_frames(original_video)
     frames, _ = video_to_frames(watermarked_video)
 
-    os.mkdir("out")
+    Path("out").mkdir(parents=True, exist_ok=True)
     for i in range(len(frames)):
-        extracted = algorithm.extract(orig_frames[i], frames[i], shape)
+        if isinstance(algorithm, BlindWatermark):
+            extracted = algorithm.extract(frames[i], shape)
+        elif isinstance(algorithm, NonBlindWatermark):
+            extracted = algorithm.extract(orig_frames[i], frames[i], shape)
+        else:
+            msg = "Unknown watermark type"
+            raise TypeError(msg)
+
         cv2.imwrite(f"out/out-{i}.png", extracted)
 
 
@@ -107,6 +113,7 @@ ALGORITHMS = {
     "dwt": NB.DWT(),
     "svd": NB.SVD(),
     "dwt-dct-svd": NB.DWT_DCT_SVD(),
+    "dwt-dct": B.DWT_DCT(qim_step=50),
 }
 
 parser = argparse.ArgumentParser()
@@ -140,6 +147,12 @@ _ = parser.add_argument(
     help="Watermarked video file",
 )
 args = parser.parse_args()
+
 selected_method = ALGORITHMS.get(args.method)
-shape = embed(args.input, args.output, selected_method)
+
+video_path = Path(args.input)
+watermark_path = Path(args.watermark_image)
+watermark = Watermark.load_image(watermark_path, cv2.IMREAD_GRAYSCALE)
+
+shape = embed(args.input, args.output, watermark, selected_method)
 extract(args.input, args.output, selected_method, shape)
