@@ -1,16 +1,18 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, cast
 
 import cv2
 import numpy as np
 from numpy.typing import NDArray
 
 type RGBImage = NDArray[np.uint8]
+type ImageShape = tuple[Any, ...]
 
 
 class Watermark(ABC):
     @abstractmethod
-    def embed(self, image: RGBImage, watermark: RGBImage) -> RGBImage:
+    def embed(self, image: RGBImage, watermark: RGBImage) -> tuple[RGBImage, ImageShape]:
         """Embed the watermark into the image."""
 
     @staticmethod
@@ -18,6 +20,7 @@ class Watermark(ABC):
         image = cv2.imread(image_path, flags)
         if image is None:
             raise FileNotFoundError(image_path)
+        image = cast("RGBImage", image)
         return image
 
     @staticmethod
