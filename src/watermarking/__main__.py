@@ -25,7 +25,7 @@ ATTACKS = {
     "noise_sp": Attack.salt_and_pepper,
     "jpeg": Attack.jpeg_compress,
     "blur": Attack.gaussian_blur,
-    "crop": Attack.crop,
+    "cutout": Attack.cutout,
     "flip_vertical": Attack.flip_vertical,
     "flip_horizontal": Attack.flip_horizontal,
     "rotate_5": Attack.rotate_5,

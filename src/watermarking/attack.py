@@ -16,15 +16,15 @@ class Attack:
 
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
 
-        return cv2.warpAffine(image, M, (w, h), borderMode=cv2.BORDER_REPLICATE)
+        return cv2.warpAffine(image, M, (w, h), borderMode=cv2.BORDER_REPLICATE)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def rotate_180(image: RGBImage) -> RGBImage:
-        return cv2.rotate(image, cv2.ROTATE_180)
+        return cv2.rotate(image, cv2.ROTATE_180)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def rotate_90(image: RGBImage) -> RGBImage:
-        return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+        return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def rotate_30(image: RGBImage) -> RGBImage:
@@ -40,18 +40,20 @@ class Attack:
 
     @staticmethod
     def flip_horizontal(image: RGBImage) -> RGBImage:
-        return cv2.flip(image, 1)
+        return cv2.flip(image, 1)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def flip_vertical(image: RGBImage) -> RGBImage:
-        return cv2.flip(image, 0)
+        return cv2.flip(image, 0)  # pyright: ignore[reportReturnType]
 
     @staticmethod
-    def crop(image: RGBImage, percent=0.25) -> RGBImage:
+    def cutout(image: RGBImage, percent=0.25) -> RGBImage:
         h, w = image.shape[:2]
 
-        h_cut = int(h * percent)
-        w_cut = int(w * percent)
+        ratio = np.sqrt(percent)
+
+        h_cut = int(h * ratio)
+        w_cut = int(w * ratio)
 
         attacked = image.copy()
         attacked[:h_cut, :w_cut] = 0
@@ -60,15 +62,15 @@ class Attack:
     @staticmethod
     def resize(image: RGBImage, scale: float = 0.5) -> RGBImage:
         h, w = image.shape[:2]
-        return cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_LINEAR)
+        return cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_LINEAR)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def gaussian_blur(image: RGBImage, kernel_size: int = 5) -> RGBImage:
-        return cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+        return cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def median_blur(image: RGBImage, kernel_size: int = 5) -> RGBImage:
-        return cv2.medianBlur(image, kernel_size)
+        return cv2.medianBlur(image, kernel_size)  # pyright: ignore[reportReturnType]
 
     @staticmethod
     def gaussian_noise(image: RGBImage, sigma: float = 20.0) -> RGBImage:
@@ -95,4 +97,4 @@ class Attack:
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
         _, enc = cv2.imencode(".jpg", image, encode_params)
         dec = cv2.imdecode(enc, cv2.IMREAD_COLOR)
-        return dec
+        return dec  # pyright: ignore[reportReturnType]
