@@ -100,9 +100,9 @@ for method_name, algorithm in selected_methods.items():
         cv2.imwrite(f"{image_path.stem}_{method_name}_att_{attack_name}.png", attacked)
 
         if isinstance(algorithm, BlindWatermark):
-            extracted = algorithm.extract(watermarked, watermark_shape)
+            extracted = algorithm.extract(attacked, watermark_shape)
         elif isinstance(algorithm, NonBlindWatermark):
-            extracted = algorithm.extract(image, watermarked, watermark_shape)
+            extracted = algorithm.extract(image, attacked, watermark_shape)
         else:
             msg = "Unknown watermark type"
             raise TypeError(msg)
