@@ -4,12 +4,22 @@ from pathlib import Path
 
 import cv2
 
+import watermarking.algorithms.blind as Blind
+import watermarking.algorithms.non_blind as NonBlind
 from video_watermarking.video import frames_to_video, video_to_frames
-from watermarking import ALGORITHMS
 from watermarking.watermark import BlindWatermark, NonBlindWatermark, Watermark
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="[%(name)s] %(levelname)s: %(message)s", level=logging.DEBUG)
+
+ALGORITHMS = {
+    "dct_nb": NonBlind.DCT(),
+    "dwt_nb": NonBlind.DWT(),
+    "svd_nb": NonBlind.SVD(),
+    "dwt-dct-svd_nb": NonBlind.DWT_DCT_SVD(alpha=10),
+    "dwt-dct-svd": Blind.DWT_DCT_SVD(qim_step=50),
+    "dwt-dct": Blind.DWT_DCT(qim_step=50),
+}
 
 
 def embed(input_file: str, output_file: str, watermark, algorithm):
