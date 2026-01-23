@@ -9,8 +9,8 @@ from typing import cast, override
 import cv2
 
 import watermarking.algorithms.blind as B
-import watermarking.algorithms.non_blind as NB
-from watermarking.watermark import BlindWatermark, NonBlindWatermark, RGBImage, Watermark
+from watermarking import ALGORITHMS
+from watermarking.watermark import BlindWatermark, NonBlindWatermark, Watermark
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="[%(name)s] %(levelname)s: %(message)s", level=logging.DEBUG)
@@ -107,14 +107,6 @@ def extract(original_video: str, watermarked_video: str, algorithm, shape: tuple
 
         cv2.imwrite(f"out/out-{i}.png", extracted)
 
-
-ALGORITHMS = {
-    "dct": NB.DCT(),
-    "dwt": NB.DWT(),
-    "svd": NB.SVD(),
-    "dwt-dct-svd": NB.DWT_DCT_SVD(),
-    "dwt-dct": B.DWT_DCT(qim_step=50),
-}
 
 parser = argparse.ArgumentParser()
 _ = parser.add_argument(
