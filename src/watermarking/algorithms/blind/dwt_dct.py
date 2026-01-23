@@ -1,66 +1,56 @@
+from typing import cast, override
+
 import cv2
 import numpy as np
 import pywt
 
-from watermarking.watermark import BlindWatermark
+from watermarking.watermark import BlindWatermark, ImageShape, RGBImage
 
 
 class DWT_DCT(BlindWatermark):
-    def __init__(self, qim_step: int = 30, block_size: int = 4):
+    def __init__(self, wavelet: str = "haar", qim_step: int = 30, block_size: int = 4):
+        self.wavelet: str = wavelet
         self.qim_step: int = qim_step
         self.block_size: int = block_size
 
-    def _qim_embed(self, c1, c2, bit):
-        step = self.qim_step
-        difference = c1 - c2
+    def _qim_embed(self, coefficient: float, bit: int):
+        if bit == 0:  # quantize to even multiple of step
+            return round(coefficient / self.qim_step) * self.qim_step
+        else:  # quantize to odd multiple of step
+            return round((coefficient - (self.qim_step / 2)) / self.qim_step) * self.qim_step + (self.qim_step / 2)
 
-        if bit == 0:  # quantize diff to even multiple of step
-            target_diff = round(difference / step) * step
-        else:  # quantize diff to odd multiple of step
-            target_diff = round((difference - (step / 2)) / step) * step + (step / 2)
+    def _qim_extract(self, coefficient: float):
+        val_0 = round(coefficient / self.qim_step) * self.qim_step
+        val_1 = round((coefficient - (self.qim_step / 2)) / self.qim_step) * self.qim_step + (self.qim_step / 2)
 
-        shift_needed = target_diff - difference
-
-        # apply half the shift to c1 and subtract half from c2 to keep the average energy the same
-        c1_new = c1 + (shift_needed / 2)
-        c2_new = c2 - (shift_needed / 2)
-
-        return c1_new, c2_new
-
-    def _qim_extract(self, c1, c2):
-        step = self.qim_step
-        difference = c1 - c2
-
-        val_0 = round(difference / step) * step
-        val_1 = round((difference - (step / 2)) / step) * step + (step / 2)
-
-        dist_0 = abs(difference - val_0)
-        dist_1 = abs(difference - val_1)
+        dist_0 = abs(coefficient - val_0)
+        dist_1 = abs(coefficient - val_1)
 
         return 0 if dist_0 < dist_1 else 1
 
-    def embed(self, image, watermark):
+    @override
+    def embed(self, image: RGBImage, watermark: RGBImage):
         image_ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
         y_channel = image_ycrcb[:, :, 0].astype(np.float32)
         watermark_bin = self._image_to_binary(watermark)
 
         # extract DWT coefficients
-        coeffs = pywt.dwt2(y_channel, "haar")
+        coeffs = pywt.dwt2(y_channel, self.wavelet)
         LL, (LH, HL, HH) = coeffs
 
-        # crop the dimensions to fit the blocks
-        original_height, original_width = LL.shape
+        height, width = LL.shape
 
-        height = original_height - (original_height % self.block_size)
-        width = original_width - (original_width % self.block_size)
+        # crop the dimensions to fit the blocks
+        height = height - (height % self.block_size)
+        width = width - (width % self.block_size)
 
         # check capacity
         max_bits = (height // self.block_size) * (width // self.block_size)
         watermark_length = len(watermark_bin)
 
         if watermark_length > max_bits:
-            watermark_bin = watermark_bin[:max_bits]
-            print(f"Capacity exceeded: max bits: {max_bits}, watermark length: {watermark_length}")
+            msg = f"Capacity exceeded: max bits: {max_bits}, watermark length: {watermark_length}"
+            raise ValueError(msg)
 
         watermark_bit_index = 0
 
@@ -70,39 +60,37 @@ class DWT_DCT(BlindWatermark):
                     break
 
                 block = LL[i : i + self.block_size, j : j + self.block_size]
-                dct_block = cv2.dct(block)
+                dct_block = cv2.dct(block)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
-                # coefficients (0,1) and (1,0)
-                c1 = dct_block[0, 1]
-                c2 = dct_block[1, 0]
+                coeff = dct_block[0, 1]
+                dct_block[0, 1] = self._qim_embed(coeff, watermark_bin[watermark_bit_index])
 
-                c1_new, c2_new = self._qim_embed(c1, c2, watermark_bin[watermark_bit_index])
-
-                dct_block[0, 1] = c1_new
-                dct_block[1, 0] = c2_new
-
-                idct_block = cv2.idct(dct_block)
-                LL[i : i + self.block_size, j : j + self.block_size] = idct_block
+                LL[i : i + self.block_size, j : j + self.block_size] = cv2.idct(dct_block)
                 watermark_bit_index += 1
 
-        coeffs_new = (LL, (LH, HL, HH))
-        y_channel_watermarked = pywt.idwt2(coeffs_new, "haar")
+        y_channel_watermarked = pywt.idwt2((LL, (LH, HL, HH)), self.wavelet)
+
+        # Handle DWT padding odd image dimensions
+        original_height, original_width = y_channel.shape
+        y_channel_watermarked = y_channel_watermarked[:original_height, :original_width]
 
         image_ycrcb[:, :, 0] = np.clip(y_channel_watermarked, 0, 255).astype(np.uint8)
         watermarked_img = cv2.cvtColor(image_ycrcb, cv2.COLOR_YCrCb2BGR)
+        watermarked_img = cast("RGBImage", watermarked_img)
 
         return watermarked_img, watermark.shape
 
-    def extract(self, image, watermark_shape):
-        image_ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+    @override
+    def extract(self, watermarked_image: RGBImage, watermark_shape: ImageShape):
+        image_ycrcb = cv2.cvtColor(watermarked_image, cv2.COLOR_BGR2YCrCb)
         y_channel = image_ycrcb[:, :, 0].astype(np.float32)
 
-        coeffs = pywt.dwt2(y_channel, "haar")
-        LL, _ = coeffs
+        coeffs = pywt.dwt2(y_channel, self.wavelet)
+        LL, (LH, HL, HH) = coeffs
 
-        original_height, original_width = LL.shape
-        height = original_height - (original_height % self.block_size)
-        width = original_width - (original_width % self.block_size)
+        height, width = LL.shape
+        height = height - (height % self.block_size)
+        width = width - (width % self.block_size)
 
         extracted_bits = []
         total_bits = np.prod(watermark_shape)
@@ -114,11 +102,10 @@ class DWT_DCT(BlindWatermark):
                     break
 
                 block = LL[i : i + self.block_size, j : j + self.block_size]
-                dct_block = cv2.dct(block)
+                dct_block = cv2.dct(block)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
-                c1 = dct_block[0, 1]
-                c2 = dct_block[1, 0]
-                bit = self._qim_extract(c1, c2)
+                coeff = dct_block[0, 1]
+                bit = self._qim_extract(coeff)
 
                 extracted_bits.append(bit)
                 watermark_bit_index += 1

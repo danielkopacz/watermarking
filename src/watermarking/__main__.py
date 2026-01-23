@@ -4,19 +4,20 @@ from pathlib import Path
 
 import cv2
 
-import watermarking.algorithms.blind as B
-import watermarking.algorithms.non_blind as NB
+import watermarking.algorithms.blind as Blind
+import watermarking.algorithms.non_blind as NonBlind
 from watermarking.attack import Attack
 from watermarking.benchmark import Benchmark
 from watermarking.plot import plot_ber, plot_ncc, plot_psnr, plot_ssim
 from watermarking.watermark import BlindWatermark, NonBlindWatermark, RGBImage, Watermark
 
 ALGORITHMS = {
-    "dct": NB.DCT(),
-    "dwt": NB.DWT(),
-    "svd": NB.SVD(),
-    "dwt-dct-svd": NB.DWT_DCT_SVD(),
-    "dwt-dct": B.DWT_DCT(),
+    "dct_nb": NonBlind.DCT(),
+    "dwt_nb": NonBlind.DWT(),
+    "svd_nb": NonBlind.SVD(),
+    "dwt-dct-svd_nb": NonBlind.DWT_DCT_SVD(alpha=10),
+    "dwt-dct-svd": Blind.DWT_DCT_SVD(qim_step=50),
+    "dwt-dct": Blind.DWT_DCT(qim_step=50),
 }
 
 ATTACKS = {
