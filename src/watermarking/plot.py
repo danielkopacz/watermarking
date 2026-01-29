@@ -104,3 +104,22 @@ def plot_ncc(results):
     plt.tight_layout()
     plt.savefig("ncc.png", dpi=150)
     plt.close()
+
+
+def plot_jpeg(results, metric_name="BER"):
+    plt.figure(figsize=(10, 6))
+
+    for method_name, attacks in results.items():
+        if "jpeg" not in attacks:
+            continue
+        qualities, values = zip(*attacks["jpeg"])
+        plt.plot(qualities, values, marker='o', label=method_name)
+
+    plt.xlabel("Jakość JPEG")
+    plt.ylabel(metric_name)
+    plt.title(f"{metric_name} dla algorytmów w zależności od jakości JPEG")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(f"{metric_name.lower()}_jpeg_line.png", dpi=150)
+    plt.close()
