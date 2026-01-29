@@ -107,7 +107,7 @@ def plot_ncc(results):
 
 
 def plot_jpeg(results, metric_name="BER"):
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(14, 6))
 
     for method_name, attacks in results.items():
         if "jpeg" not in attacks:
@@ -121,5 +121,24 @@ def plot_jpeg(results, metric_name="BER"):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"{metric_name.lower()}_jpeg_line.png", dpi=150)
+    plt.savefig(f"{metric_name.lower()}_jpeg.png", dpi=150)
+    plt.close()
+
+
+def plot_ng(results, metric_name="BER"):
+    plt.figure(figsize=(14, 6))
+
+    for method_name, attacks in results.items():
+        if "noise_gauss" not in attacks:
+            continue
+        sigmas, values = zip(*attacks["noise_gauss"])
+        plt.plot(sigmas, values, marker='o', label=method_name)
+
+    plt.title(f"{metric_name} dla algorytmów w zależności od natężenia szumu Gaussowskiego")
+    plt.xlabel("Sigma szumu Gaussowskiego")
+    plt.ylabel(metric_name)
+    plt.grid(axis="y", alpha=0.3)
+    plt.legend(title="Algorytmy")
+    plt.tight_layout()
+    plt.savefig(f"{metric_name.lower()}_gaussian_noise.png", dpi=150)
     plt.close()

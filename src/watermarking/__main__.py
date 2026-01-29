@@ -8,7 +8,7 @@ import watermarking.algorithms.blind as Blind
 import watermarking.algorithms.non_blind as NonBlind
 from watermarking.attack import Attack
 from watermarking.benchmark import Benchmark
-from watermarking.plot import plot_ber, plot_ncc, plot_psnr, plot_ssim, plot_jpeg
+from watermarking.plot import plot_ber, plot_ncc, plot_psnr, plot_ssim, plot_jpeg, plot_ng
 from watermarking.watermark import BlindWatermark, NonBlindWatermark, RGBImage, Watermark
 
 ALGORITHMS = {
@@ -34,7 +34,8 @@ ATTACKS = {
     "rotate_45": Attack.rotate_45,
 }
 
-JPEG_QUALITIES = list(range(10, 101, 10)) 
+JPEG_QUALITIES = list(range(0, 101, 10)) 
+GAUSSIAN_SIGMAS = list(range(0, 51, 5))
 
 parser = argparse.ArgumentParser()
 _ = parser.add_argument(
@@ -83,15 +84,22 @@ results_ber = {}
 results_psnr = {}
 results_ssim = {}
 results_ncc = {}
-results_ber_jpeg = {}
-results_ncc_jpeg = {}
+if "jpeg" in selected_attacks:
+    results_ber_jpeg = {}
+    results_ncc_jpeg = {}
+if "noise_gauss" in selected_attacks:
+    results_ber_ng = {}
+    results_ncc_ng = {}
 
 for method_name, algorithm in selected_methods.items():
     results_ber[method_name] = {}
     results_ncc[method_name] = {}
-    results_ber_jpeg[method_name] = {}
-    results_ncc_jpeg[method_name] = {}
-
+    if "jpeg" in selected_attacks:
+        results_ber_jpeg[method_name] = {}
+        results_ncc_jpeg[method_name] = {}
+    if "noise_gauss" in selected_attacks:
+        results_ber_ng[method_name] = {}
+        results_ncc_ng[method_name] = {}
     watermarked, watermark_shape = algorithm.embed(image, watermark)
     _ = cv2.imwrite(f"{image_path.stem}_watermarked_{method_name}.png", watermarked)
 
@@ -103,7 +111,29 @@ for method_name, algorithm in selected_methods.items():
     results_ssim[method_name] = Benchmark.ssim(image, watermarked)
 
     for attack_name, attack in selected_attacks.items():
-        if attack_name == 'jpeg':
+        if "noise_gauss" in selected_attacks:
+            results_ber_ng[method_name]["noise_gauss"] = []
+            results_ncc_ng[method_name]["noise_gauss"] = []
+
+            for sigma in GAUSSIAN_SIGMAS:
+                attacked = Attack.gaussian_noise(watermarked, sigma=sigma)
+                cv2.imwrite(f"{image_path.stem}_{method_name}_att_gauss_sigma{sigma}.png", attacked)
+
+                if isinstance(algorithm, BlindWatermark):
+                    extracted = algorithm.extract(attacked, watermark_shape)
+                elif isinstance(algorithm, NonBlindWatermark):
+                    extracted = algorithm.extract(image, attacked, watermark_shape)
+                else:
+                    raise TypeError("Unknown watermark type")
+
+                cv2.imwrite(f"{watermark_path.stem}_ex_{method_name}_gauss_sigma{sigma}.png", extracted)
+
+                ber = Benchmark.ber(expected, extracted)
+                results_ber_ng[method_name]["noise_gauss"].append((sigma, ber))
+
+                ncc = Benchmark.ncc(expected, extracted)
+                results_ncc_ng[method_name]["noise_gauss"].append((sigma, ncc))
+        elif attack_name == 'jpeg':
             results_ber_jpeg[method_name]["jpeg"] = []
             results_ncc_jpeg[method_name]["jpeg"] = []
 
@@ -150,5 +180,9 @@ plot_psnr(results_psnr)
 plot_ber(results_ber)
 plot_ssim(results_ssim)
 plot_ncc(results_ncc)
-plot_jpeg(results_ber_jpeg, "BER")
-plot_jpeg(results_ncc_jpeg, "NCC")
+if "jpeg" in selected_attacks:
+    plot_jpeg(results_ber_jpeg, "BER")
+    plot_jpeg(results_ncc_jpeg, "NCC")
+if "noise_gauss" in selected_attacks:
+    plot_ng(results_ber_ng, "BER")
+    plot_ng(results_ncc_ng, "NCC")
