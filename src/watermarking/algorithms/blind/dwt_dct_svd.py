@@ -55,7 +55,7 @@ class DWT_DCT_SVD(BlindWatermark):
         watermark_length = len(watermark_bin)
 
         if watermark_length > max_bits:
-            msg = f"Capacity exceeded: max bits: {max_bits}, watermark length: {watermark_length}"
+            msg = f"Capacity exceeded: max bits: {max_bits}, watermark length: {watermark_length}\n Try a smaller watermark."
             raise ValueError(msg)
 
         watermark_bit_index = 0
