@@ -21,7 +21,7 @@ source .venv/bin/activate
 
 Install dependencies
 ```bash
-pip install -e .
+pip install -e .[dev]
 ```
 
 ## Running
@@ -44,8 +44,8 @@ python -m video_watermarking -i sample.mp4 -w watermark.png -m dct_nb -o waterma
 | dwt_nb  | Discrete Wavelet Transform (DWT)  |
 | svd_nb  | Singular Value Decomposition (SVD)  |
 | dwt-dct-svd_nb  | Hybrid DWT-DCT-SVD  |
-| dwt-dct-svd  | Hybrid DWT-DCT-SVD  |
-| dwt-dct  | Hybrid DWT-DCT  |
+| dwt-dct-svd  | Hybrid DWT-DCT-SVD (blind)  |
+| dwt-dct  | Hybrid DWT-DCT (blind)  |
 
 
 ## Available attacks

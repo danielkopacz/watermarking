@@ -3,7 +3,8 @@ name = "watermarking"
 description = ""
 version = "0.0.1"
 authors = [
-    { name = "Daniel Kopacz" }
+    {name = "Daniel Kopacz"},
+    {name = "Zuzanna Olszówka"}
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -13,7 +14,12 @@ dependencies = [
     "matplotlib",
     "scipy",
     "scikit-image",
-    "reedsolo"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest"
 ]
 
 [build-system]
@@ -39,6 +45,8 @@ ignore = [
     "SIM108",
     "N812",
     "N806",
+    "EM101",
+    "TRY003"
 ]
 select = [
     "ALL"
